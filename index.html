@@ -710,12 +710,21 @@
 
         // ===== LOAD DATA =====
         async function loadAll() {
-            const [cRes, pRes] = await Promise.all([
-                sb.from('categories').select('*').order('created_at'),
-                sb.from('products').select('*').order('created_at', { ascending: false })
-            ]);
-            if (!cRes.error) categories = cRes.data || [];
-            if (!pRes.error) products = pRes.data || [];
+            try {
+                const [cRes, pRes] = await Promise.all([
+                    sb.from('categories').select('*').order('created_at'),
+                    sb.from('products').select('*').order('created_at', { ascending: false })
+                ]);
+                if (!cRes.error) categories = cRes.data || [];
+                else console.error('Categories xatosi:', cRes.error.message);
+                if (!pRes.error) products = pRes.data || [];
+                else console.error('Products xatosi:', pRes.error.message);
+            } catch (e) {
+                console.error('Supabase ulanish xatosi:', e);
+                const grid = document.getElementById('products-grid');
+                if (grid) grid.innerHTML = '<div class="loading-spinner" style="grid-column:1/-1;color:#E63946">⚠️ Ma\'lumotlar yuklashda xatolik. Sahifani yangilang.</div>';
+                throw e; // yuqoriga uzatish
+            }
         }
 
         async function loadTelegramUsername() {
@@ -880,11 +889,15 @@
 
         // ===== INIT =====
         (async () => {
-            await loadTelegramUsername();
-            await loadAll();
-            renderCats();
-            renderProducts();
-            recordVisit();
+            try {
+                await loadTelegramUsername();
+                await loadAll();
+                renderCats();
+                renderProducts();
+                recordVisit();
+            } catch (e) {
+                // Xato loadAll() ichida ko'rsatilgan — bu yerda qo'shimcha harakat shart emas
+            }
         })();
     </script>
 </body>
